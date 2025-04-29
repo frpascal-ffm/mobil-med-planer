@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { format, addMonths, subMonths } from "date-fns";
 import { de } from "date-fns/locale";
@@ -21,7 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Calendar, ChevronLeft, ChevronRight, Wheelchair } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { generateAvailableDays, generateTimeSlots } from "@/services/mockData";

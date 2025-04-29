@@ -1,10 +1,11 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockBookings, mockVehicles } from "@/services/mockData";
-import { Calendar, Clock, Truck, Wheelchair, AlertCircle, Check } from "lucide-react";
+import { Calendar, Clock, Truck, AlertCircle, Check } from "lucide-react";
 import { Booking } from "@/types";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
