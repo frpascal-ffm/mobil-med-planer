@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { mockBookings, mockVehicles } from "@/services/mockData";
 import { Booking, Vehicle } from "@/types";
-import { Calendar as CalendarIcon, ChevronDown } from "lucide-react";
-import { format, addDays, parseISO } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { format, addDays } from "date-fns";
 import { de } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar } from "@/components/ui/calendar";
@@ -148,7 +148,7 @@ const Schedule = () => {
               <div className="h-10 border-b flex items-center justify-center text-xs font-medium bg-gray-100 text-gray-700">
                 Zeit
               </div>
-              <div className="h-[calc(100vh-280px)]">
+              <div className="h-[calc(100vh-280px)] overflow-auto">
                 {timeBlocks.map((time) => (
                   <div 
                     key={time} 
@@ -161,19 +161,22 @@ const Schedule = () => {
             </div>
             
             {/* Schedule grid */}
-            <ScrollArea className="w-full" orientation="horizontal">
-              <div className="min-w-max grid" style={{ gridTemplateColumns: `repeat(${vehiclesWithBookings.length + 1}, minmax(180px, 1fr))` }}>
+            <div className="overflow-auto">
+              <div className="min-w-max">
                 {/* Header row with vehicle names */}
-                <div className="grid" style={{ gridTemplateColumns: `repeat(${vehiclesWithBookings.length + 1}, minmax(180px, 1fr))` }}>
+                <div className="flex">
                   {vehiclesWithBookings.map((vehicle) => (
-                    <div key={vehicle.id} className="h-10 border-b border-r px-2 bg-gray-100 flex items-center justify-center">
+                    <div 
+                      key={vehicle.id} 
+                      className="h-10 border-b border-r px-2 bg-gray-100 flex items-center justify-center min-w-[180px]"
+                    >
                       <div className="font-medium text-sm text-gray-700">
                         {vehicle.licensePlate}
                       </div>
                     </div>
                   ))}
                   
-                  <div className="h-10 border-b px-2 bg-gray-100 flex items-center justify-between">
+                  <div className="h-10 border-b px-2 bg-gray-100 flex items-center justify-center min-w-[180px]">
                     <div className="font-medium text-sm text-gray-700">
                       Ohne Fahrzeug
                     </div>
@@ -181,61 +184,19 @@ const Schedule = () => {
                 </div>
                 
                 {/* Time blocks grid with scrolling */}
-                <ScrollArea className="h-[calc(100vh-280px)]">
-                  <div>
-                    {timeBlocks.map((time) => (
-                      <div key={time} className="grid" style={{ gridTemplateColumns: `repeat(${vehiclesWithBookings.length + 1}, minmax(180px, 1fr))` }}>
-                        {vehiclesWithBookings.map((vehicle) => (
-                          <Droppable key={`${vehicle.id}`} droppableId={vehicle.id}>
-                            {(provided, snapshot) => (
-                              <div 
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                                key={`${vehicle.id}-${time}`} 
-                                className={`h-12 border-b border-r p-1 ${snapshot.isDraggingOver ? 'bg-gray-50' : ''}`}
-                              >
-                                {getBookingsForTimeBlock(vehicle.id, time).map((booking, index) => (
-                                  <Draggable key={booking.id} draggableId={booking.id} index={index}>
-                                    {(provided, snapshot) => (
-                                      <div 
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        {...provided.dragHandleProps}
-                                        style={{
-                                          ...provided.draggableProps.style,
-                                          opacity: snapshot.isDragging ? 0.8 : 1
-                                        }}
-                                        className="p-1 text-xs bg-medical-100 border-l-2 border-medical-500 rounded mb-1 shadow-sm cursor-grab active:cursor-grabbing"
-                                      >
-                                        <div className="flex justify-between items-start">
-                                          <span className="font-medium">{booking.time} Uhr</span>
-                                          {booking.transportType === "wheelchair" && (
-                                            <span className="bg-amber-100 text-amber-800 px-1 rounded flex items-center">
-                                              <span className="mr-1">♿</span>
-                                            </span>
-                                          )}
-                                        </div>
-                                        <div className="font-medium truncate">{booking.customerName}</div>
-                                        <div className="truncate text-gray-600">{booking.pickupAddress}</div>
-                                      </div>
-                                    )}
-                                  </Draggable>
-                                ))}
-                                {provided.placeholder}
-                              </div>
-                            )}
-                          </Droppable>
-                        ))}
-                        
-                        <Droppable droppableId="no-vehicle" key="no-vehicle">
+                <div className="h-[calc(100vh-280px)] overflow-auto">
+                  {timeBlocks.map((time) => (
+                    <div key={time} className="flex">
+                      {vehiclesWithBookings.map((vehicle) => (
+                        <Droppable key={`${vehicle.id}`} droppableId={vehicle.id}>
                           {(provided, snapshot) => (
                             <div 
                               ref={provided.innerRef}
                               {...provided.droppableProps}
-                              key={`unassigned-${time}`} 
-                              className={`h-12 border-b p-1 ${snapshot.isDraggingOver ? 'bg-gray-100' : 'bg-gray-50'}`}
+                              key={`${vehicle.id}-${time}`} 
+                              className={`h-12 border-b border-r p-1 min-w-[180px] ${snapshot.isDraggingOver ? 'bg-gray-50' : ''}`}
                             >
-                              {getBookingsForTimeBlock(null, time).map((booking, index) => (
+                              {getBookingsForTimeBlock(vehicle.id, time).map((booking, index) => (
                                 <Draggable key={booking.id} draggableId={booking.id} index={index}>
                                   {(provided, snapshot) => (
                                     <div 
@@ -246,7 +207,7 @@ const Schedule = () => {
                                         ...provided.draggableProps.style,
                                         opacity: snapshot.isDragging ? 0.8 : 1
                                       }}
-                                      className="p-1 text-xs bg-red-50 border-l-2 border-red-500 rounded mb-1 shadow-sm cursor-grab active:cursor-grabbing"
+                                      className="p-1 text-xs bg-medical-100 border-l-2 border-medical-500 rounded mb-1 shadow-sm cursor-grab active:cursor-grabbing"
                                     >
                                       <div className="flex justify-between items-start">
                                         <span className="font-medium">{booking.time} Uhr</span>
@@ -266,12 +227,52 @@ const Schedule = () => {
                             </div>
                           )}
                         </Droppable>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
+                      ))}
+                      
+                      <Droppable droppableId="no-vehicle" key="no-vehicle">
+                        {(provided, snapshot) => (
+                          <div 
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            key={`unassigned-${time}`} 
+                            className={`h-12 border-b p-1 min-w-[180px] ${snapshot.isDraggingOver ? 'bg-gray-100' : 'bg-gray-50'}`}
+                          >
+                            {getBookingsForTimeBlock(null, time).map((booking, index) => (
+                              <Draggable key={booking.id} draggableId={booking.id} index={index}>
+                                {(provided, snapshot) => (
+                                  <div 
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    style={{
+                                      ...provided.draggableProps.style,
+                                      opacity: snapshot.isDragging ? 0.8 : 1
+                                    }}
+                                    className="p-1 text-xs bg-red-50 border-l-2 border-red-500 rounded mb-1 shadow-sm cursor-grab active:cursor-grabbing"
+                                  >
+                                    <div className="flex justify-between items-start">
+                                      <span className="font-medium">{booking.time} Uhr</span>
+                                      {booking.transportType === "wheelchair" && (
+                                        <span className="bg-amber-100 text-amber-800 px-1 rounded flex items-center">
+                                          <span className="mr-1">♿</span>
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="font-medium truncate">{booking.customerName}</div>
+                                    <div className="truncate text-gray-600">{booking.pickupAddress}</div>
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </ScrollArea>
+            </div>
           </div>
         </DragDropContext>
       </Card>
