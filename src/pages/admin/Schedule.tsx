@@ -5,9 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockBookings, mockVehicles } from "@/services/mockData";
 import { Booking, Vehicle } from "@/types";
-import { Calendar } from "lucide-react";
-import { format } from "date-fns";
+import { Calendar, Info, ChevronDown } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
+import { WheelchairIcon } from "@/components/Icons";
+import { Separator } from "@/components/ui/separator";
 
 const Schedule = () => {
   const [activeDate, setActiveDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -63,6 +66,24 @@ const Schedule = () => {
   
   const dateTabs = generateDateTabs();
   
+  // Timeblocks for the schedule
+  const timeBlocks = [];
+  for (let hour = 0; hour < 24; hour++) {
+    timeBlocks.push(`${hour.toString().padStart(2, '0')}:00`);
+  }
+  
+  // Find bookings for a specific vehicle and hour
+  const getBookingsForTimeBlock = (vehicleId: string | null, timeBlock: string) => {
+    const hour = parseInt(timeBlock.split(':')[0]);
+    
+    // Filter bookings that fall within this hour
+    return dateBookings.filter(booking => {
+      const bookingHour = parseInt(booking.time.split(':')[0]);
+      return (vehicleId === null && !booking.vehicleId && bookingHour === hour) || 
+             (booking.vehicleId === vehicleId && bookingHour === hour);
+    });
+  };
+  
   return (
     <div className="space-y-6">
       <div>
@@ -86,112 +107,129 @@ const Schedule = () => {
             ))}
           </TabsList>
           
-          <TabsContent value={activeDate} className="space-y-8">
-            {/* Unassigned bookings */}
-            <Card>
-              <CardHeader className="bg-amber-50 border-b">
-                <CardTitle className="flex items-center text-amber-900">
-                  <Calendar className="h-5 w-5 mr-2 text-amber-600" />
-                  Buchungen ohne Fahrzeug
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                {unassignedBookings.length > 0 ? (
-                  <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-                    {unassignedBookings.map(booking => (
-                      <div
-                        key={booking.id}
-                        className="border rounded-md p-3 bg-white shadow-sm draggable-item"
-                        draggable
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="text-sm font-medium">{booking.time} Uhr</span>
-                          {booking.transportType === "wheelchair" && (
-                            <span className="bg-amber-100 text-amber-800 p-1 rounded text-xs flex items-center">
-                              <span className="mr-1">♿</span>
-                              Rollstuhl
-                            </span>
-                          )}
-                          {booking.transportType === "carryingChair" && (
-                            <span className="bg-red-100 text-red-800 p-1 rounded text-xs">Tragstuhl</span>
-                          )}
+          <TabsContent value={activeDate}>
+            <div className="bg-white rounded-lg border shadow">
+              <div className="grid grid-cols-[auto_1fr]">
+                {/* Time blocks column */}
+                <div className="min-w-[60px] border-r bg-gray-50">
+                  <div className="h-12 border-b flex items-center justify-center font-semibold bg-medical-50 text-medical-900">
+                    Zeit
+                  </div>
+                  {timeBlocks.map((time) => (
+                    <div key={time} className="h-20 px-2 border-b flex items-center justify-center text-sm text-gray-500">
+                      {time}
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Schedule grid */}
+                <div className="overflow-x-auto">
+                  <div className="min-w-full grid" style={{ gridTemplateColumns: `repeat(${vehiclesWithBookings.length + 1}, minmax(220px, 1fr))` }}>
+                    {/* Header row with vehicle names */}
+                    <div className="grid" style={{ gridTemplateColumns: `repeat(${vehiclesWithBookings.length + 1}, minmax(220px, 1fr))` }}>
+                      {vehiclesWithBookings.map((vehicle) => (
+                        <div key={vehicle.id} className="h-12 border-b border-r px-3 bg-medical-50 flex items-center justify-between">
+                          <div className="font-semibold text-medical-900">
+                            {vehicle.licensePlate}
+                          </div>
+                          <div className="text-xs text-medical-600">
+                            {vehicle.type} • Sitze: {vehicle.seats} • RS: {vehicle.wheelchairSpaces}
+                          </div>
                         </div>
+                      ))}
+                      
+                      <div className="h-12 border-b px-3 bg-gray-100 flex items-center justify-between">
+                        <div className="font-semibold">
+                          Ohne Fahrzeug
+                        </div>
+                        <Button variant="ghost" size="sm" className="h-7 flex items-center">
+                          <ChevronDown className="h-4 w-4 mr-1" />
+                          Filter
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Time blocks grid */}
+                    {timeBlocks.map((time) => (
+                      <div key={time} className="grid" style={{ gridTemplateColumns: `repeat(${vehiclesWithBookings.length + 1}, minmax(220px, 1fr))` }}>
+                        {vehiclesWithBookings.map((vehicle) => {
+                          const bookings = getBookingsForTimeBlock(vehicle.id, time);
+                          return (
+                            <div key={`${vehicle.id}-${time}`} className="h-20 border-b border-r p-1 drop-area can-drop">
+                              {bookings.map((booking) => (
+                                <div 
+                                  key={booking.id} 
+                                  className="p-1 text-xs bg-medical-100 border-l-4 border-medical-500 rounded mb-1 shadow-sm"
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <span className="font-medium">{booking.time} Uhr</span>
+                                    {booking.transportType === "wheelchair" && (
+                                      <span className="bg-amber-100 text-amber-800 px-1 rounded flex items-center">
+                                        <span className="mr-1">♿</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="font-medium truncate">{booking.customerName}</div>
+                                  <div className="truncate text-gray-600">{booking.pickupAddress}</div>
+                                  <div className="truncate text-gray-600">{booking.destinationAddress}</div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
                         
-                        <h4 className="font-medium truncate">{booking.customerName}</h4>
-                        <p className="text-xs text-gray-500 truncate">{booking.pickupAddress}</p>
-                        <p className="text-xs text-gray-500 truncate">{booking.destinationAddress}</p>
-                        
-                        <div className="mt-2 flex justify-between items-center">
-                          <span className="text-xs bg-gray-100 px-1.5 py-0.5 rounded">
-                            Pflegegrad {booking.careLevel}
-                          </span>
-                          <Button variant="ghost" size="sm" className="h-7 text-xs">
-                            Details
-                          </Button>
+                        <div key={`unassigned-${time}`} className="h-20 border-b p-1 bg-gray-50">
+                          {getBookingsForTimeBlock(null, time).map((booking) => (
+                            <div 
+                              key={booking.id}
+                              className="p-1 text-xs bg-red-50 border-l-4 border-red-500 rounded mb-1 shadow-sm"
+                            >
+                              <div className="flex justify-between items-start">
+                                <span className="font-medium">{booking.time} Uhr</span>
+                                {booking.transportType === "wheelchair" && (
+                                  <span className="bg-amber-100 text-amber-800 px-1 rounded flex items-center">
+                                    <span className="mr-1">♿</span>
+                                  </span>
+                                )}
+                              </div>
+                              <div className="font-medium truncate">{booking.customerName}</div>
+                              <div className="truncate text-gray-600">{booking.pickupAddress}</div>
+                              <div className="truncate text-gray-600">{booking.destinationAddress}</div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="text-center py-6 text-gray-500">
-                    Keine unzugewiesenen Buchungen für diesen Tag
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            {/* Vehicles */}
-            <div className="grid gap-6 md:grid-cols-2">
-              {vehiclesWithBookings.map((vehicle) => (
-                <Card key={vehicle.id}>
-                  <CardHeader className="bg-medical-50 border-b">
-                    <CardTitle className="flex justify-between">
-                      <span>{vehicle.licensePlate} ({vehicle.type})</span>
-                      <span className="text-sm font-normal">
-                        Sitze: {vehicle.seats} | Rollstuhlplätze: {vehicle.wheelchairSpaces}
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div className="drop-area min-h-32 can-drop">
-                      {vehicle.bookings.length > 0 ? (
-                        <div className="grid gap-2">
-                          {vehicle.bookings.map(booking => (
-                            <div
-                              key={booking.id}
-                              className="border rounded-md p-3 bg-white shadow-sm"
-                            >
-                              <div className="flex justify-between items-start mb-2">
-                                <span className="text-sm font-medium">{booking.time} Uhr</span>
-                                {booking.transportType === "wheelchair" && (
-                                  <span className="bg-amber-100 text-amber-800 p-1 rounded text-xs flex items-center">
-                                    <span className="mr-1">♿</span>
-                                    Rollstuhl
-                                  </span>
-                                )}
-                                {booking.transportType === "carryingChair" && (
-                                  <span className="bg-red-100 text-red-800 p-1 rounded text-xs">Tragstuhl</span>
-                                )}
-                              </div>
-                              
-                              <h4 className="font-medium truncate">{booking.customerName}</h4>
-                              <p className="text-xs text-gray-500 truncate">{booking.pickupAddress}</p>
-                              <p className="text-xs text-gray-500 truncate">{booking.destinationAddress}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-6 text-gray-500">
-                          Fahrzeug nicht zugeteilt. Ziehen Sie Buchungen hierher.
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                </div>
+              </div>
             </div>
             
-            <p className="text-sm text-muted-foreground">
+            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3 mt-4 text-sm">
+              <div className="flex items-center">
+                <span className="w-4 h-4 bg-red-50 border-l-4 border-red-500 mr-2"></span>
+                <span className="text-gray-700 mr-4">Unzugewiesene Buchung</span>
+                
+                <span className="w-4 h-4 bg-medical-100 border-l-4 border-medical-500 mr-2"></span>
+                <span className="text-gray-700 mr-4">Zugewiesene Buchung</span>
+                
+                <span className="w-4 h-4 bg-amber-100 mr-2 flex items-center justify-center text-amber-800 text-xs">♿</span>
+                <span className="text-gray-700">Rollstuhlfahrt</span>
+              </div>
+              
+              <div>
+                <span className="text-gray-500">Raster:</span>
+                <select className="ml-2 border rounded p-1 text-sm">
+                  <option value="5">5 Min.</option>
+                  <option value="10">10 Min.</option>
+                  <option value="15">15 Min.</option>
+                  <option value="30">30 Min.</option>
+                  <option value="60">60 Min.</option>
+                </select>
+              </div>
+            </div>
+            
+            <p className="text-sm text-muted-foreground mt-4">
               <span className="font-medium">Hinweis:</span> In dieser Demo-Version ist Drag & Drop noch nicht funktional. 
               In der vollständigen Anwendung können Sie Buchungen per Drag & Drop auf Fahrzeuge ziehen.
             </p>

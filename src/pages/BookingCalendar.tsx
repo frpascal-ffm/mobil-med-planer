@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { format, addMonths, subMonths } from "date-fns";
+import { format, addMonths, subMonths, addHours, isBefore, isAfter, parseISO } from "date-fns";
 import { de } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,11 +69,33 @@ const BookingCalendar = () => {
     setSelectedTime(null);
   };
   
+  // Check if a date is within the 24-hour window
+  const isWithin24Hours = (dateStr: string) => {
+    const now = new Date();
+    const nextDay = addHours(now, 24);
+    const checkDate = parseISO(dateStr);
+    return !isBefore(checkDate, now) && !isAfter(checkDate, nextDay);
+  };
+  
   // Handle date selection
   const handleDateSelect = (day: AvailableDay) => {
     if (day.available) {
       setSelectedDate(day.date);
-      setTimeSlots(generateTimeSlots());
+      
+      // Generate time slots and apply 24-hour rule
+      const slots = generateTimeSlots();
+      const filteredSlots = slots.map(slot => {
+        const [hours, minutes] = slot.time.split(':');
+        const slotDate = new Date(day.date);
+        slotDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        
+        return {
+          ...slot,
+          available: slot.available && isWithin24Hours(slotDate.toISOString())
+        };
+      });
+      
+      setTimeSlots(filteredSlots);
       setSelectedTime(null);
     }
   };
@@ -134,7 +156,7 @@ const BookingCalendar = () => {
       const dayData = availableDays.find(d => d.date === dateString);
       
       const isAvailable = dayData?.available || false;
-      const isUrgent = dayData?.urgent || false;
+      const isUnavailable = dayData?.unavailable || false;
       const isSelected = dateString === selectedDate;
       const isPast = date < new Date();
       
@@ -144,8 +166,8 @@ const BookingCalendar = () => {
         className += " disabled";
       } else if (isSelected) {
         className += " selected";
-      } else if (isUrgent) {
-        className += " urgent";
+      } else if (isUnavailable) {
+        className += " unavailable";
       } else if (isAvailable) {
         className += " available";
       } else {
@@ -156,10 +178,10 @@ const BookingCalendar = () => {
         <div
           key={day}
           className={className}
-          onClick={() => !isPast && isAvailable && handleDateSelect(dayData || { date: dateString, available: true, urgent: false })}
+          onClick={() => !isPast && isAvailable && handleDateSelect(dayData || { date: dateString, available: true })}
         >
           <span>{day}</span>
-          {isUrgent && <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-amber-500"></span>}
+          {isUnavailable && <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-gray-500"></span>}
           {dayData?.available && isAvailable && <span className="absolute bottom-1 right-1 h-2 w-2 rounded-full bg-emerald-500"></span>}
         </div>
       );
@@ -226,8 +248,8 @@ const BookingCalendar = () => {
                     <span>Verfügbar</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-full bg-amber-500"></span>
-                    <span>Dringend</span>
+                    <span className="h-3 w-3 rounded-full bg-gray-500"></span>
+                    <span>Nicht verfügbar</span>
                   </div>
                 </div>
               </div>
@@ -269,7 +291,8 @@ const BookingCalendar = () => {
             <ul className="list-disc pl-5 space-y-2 text-gray-700">
               <li>Bitte wählen Sie einen Tag und eine Uhrzeit für Ihren Transport.</li>
               <li>Tage mit einem grünen Punkt sind verfügbar für Buchungen.</li>
-              <li>Tage mit einem gelben Punkt sind dringend und haben begrenzte Verfügbarkeit.</li>
+              <li>Tage mit einem grauen Punkt sind nicht verfügbar.</li>
+              <li>Sie können Termine nur bis zu 24 Stunden im Voraus buchen.</li>
               <li>Sie können einen Transport mit verschiedenen Beförderungsarten buchen: Sitzend, Rollstuhl oder Tragestuhl.</li>
               <li>Bei Fragen oder für kurzfristige Buchungen rufen Sie uns bitte direkt an: 030 123456789.</li>
             </ul>

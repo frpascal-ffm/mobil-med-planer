@@ -1,11 +1,18 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockUsers } from "@/services/mockData";
-import { Users, Check, AlertCircle, Info, UserPlus } from "lucide-react";
+import { Users, Check, AlertCircle, Info, UserPlus, Settings, FileEdit } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const Staff = () => {
   const [activeTab, setActiveTab] = useState<string>("active");
@@ -17,7 +24,7 @@ const Staff = () => {
   // Get the displayed users based on the active tab
   const displayedUsers = activeTab === "active" ? activeUsers : inactiveUsers;
   
-  // Get badge variant based on user role
+  // Get badge for user role
   const getRoleBadge = (role: string) => {
     switch (role) {
       case "admin":
@@ -54,116 +61,73 @@ const Staff = () => {
         </TabsList>
         
         <TabsContent value={activeTab} className="mt-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {displayedUsers.map((user) => (
-              <Card key={user.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <CardTitle>{user.name}</CardTitle>
-                    <Badge variant={user.active ? "default" : "secondary"}>
-                      {user.active ? (
-                        <>
-                          <Check className="h-3 w-3 mr-1" />
-                          Aktiv
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          Inaktiv
-                        </>
-                      )}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500">E-Mail</span>
-                        <span className="text-sm font-medium">{user.email}</span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500">Rolle</span>
-                        <div>{getRoleBadge(user.role)}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="rounded-md bg-gray-50 p-3">
-                      <h4 className="text-sm font-medium mb-2">Zugriffsrechte</h4>
-                      <ul className="space-y-1 text-sm">
-                        {user.role === "admin" && (
-                          <>
-                            <li className="flex items-center">
-                              <Check className="h-3 w-3 text-green-600 mr-2" />
-                              Vollzugriff auf alle Funktionen
-                            </li>
-                            <li className="flex items-center">
-                              <Check className="h-3 w-3 text-green-600 mr-2" />
-                              Mitarbeiter- und Fahrzeugverwaltung
-                            </li>
-                            <li className="flex items-center">
-                              <Check className="h-3 w-3 text-green-600 mr-2" />
-                              Einstellungen bearbeiten
-                            </li>
-                          </>
-                        )}
-                        
-                        {user.role === "dispatcher" && (
-                          <>
-                            <li className="flex items-center">
-                              <Check className="h-3 w-3 text-green-600 mr-2" />
-                              Termine buchen und zuweisen
-                            </li>
-                            <li className="flex items-center">
-                              <Check className="h-3 w-3 text-green-600 mr-2" />
-                              Fahrzeuge verwalten
-                            </li>
-                            <li className="flex items-center">
-                              <AlertCircle className="h-3 w-3 text-gray-400 mr-2" />
-                              Keine Mitarbeiterverwaltung
-                            </li>
-                          </>
-                        )}
-                        
-                        {user.role === "driver" && (
-                          <>
-                            <li className="flex items-center">
-                              <Check className="h-3 w-3 text-green-600 mr-2" />
-                              Eigene Fahrten einsehen
-                            </li>
-                            <li className="flex items-center">
-                              <AlertCircle className="h-3 w-3 text-gray-400 mr-2" />
-                              Nur Lesezugriff
-                            </li>
-                            <li className="flex items-center">
-                              <AlertCircle className="h-3 w-3 text-gray-400 mr-2" />
-                              Keine Bearbeitungsfunktionen
-                            </li>
-                          </>
-                        )}
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-                
-                <CardFooter className="pt-0 flex justify-between">
-                  <Button variant="outline" size="sm">
-                    Bearbeiten
-                  </Button>
-                  <Button 
-                    variant={user.active ? "destructive" : "default"} 
-                    size="sm"
-                  >
-                    {user.active ? "Deaktivieren" : "Aktivieren"}
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-          
-          {displayedUsers.length === 0 && (
+          {displayedUsers.length > 0 ? (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[200px]">Name</TableHead>
+                    <TableHead>E-Mail</TableHead>
+                    <TableHead className="w-[120px]">Rolle</TableHead>
+                    <TableHead className="w-[250px]">Berechtigungen</TableHead>
+                    <TableHead className="w-[100px] text-center">Status</TableHead>
+                    <TableHead className="text-right">Aktionen</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {displayedUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{getRoleBadge(user.role)}</TableCell>
+                      <TableCell>
+                        <div className="text-xs">
+                          {user.role === "admin" && (
+                            <span>Vollzugriff auf alle Funktionen</span>
+                          )}
+                          {user.role === "dispatcher" && (
+                            <span>Termine buchen und zuweisen, Fahrzeuge verwalten</span>
+                          )}
+                          {user.role === "driver" && (
+                            <span>Nur Lesezugriff, eigene Fahrten einsehen</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={user.active ? "default" : "secondary"}>
+                          {user.active ? (
+                            <>
+                              <Check className="h-3 w-3 mr-1" />
+                              Aktiv
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Inaktiv
+                            </>
+                          )}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm">
+                            <FileEdit className="h-3 w-3 mr-1" />
+                            Bearbeiten
+                          </Button>
+                          <Button 
+                            variant={user.active ? "destructive" : "default"} 
+                            size="sm"
+                          >
+                            {user.active ? "Deaktivieren" : "Aktivieren"}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
             <div className="text-center py-12 bg-gray-50 rounded-lg border">
               <div className="bg-gray-100 p-4 rounded-full inline-block mx-auto mb-4">
                 <Users className="h-8 w-8 text-gray-500" />

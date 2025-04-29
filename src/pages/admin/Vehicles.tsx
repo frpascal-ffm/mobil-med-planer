@@ -1,13 +1,20 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockVehicles } from "@/services/mockData";
 import { Truck, AlertCircle, Check, Info } from "lucide-react";
 import { format, isPast, parseISO, addDays } from "date-fns";
 import { de } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const Vehicles = () => {
   const [activeTab, setActiveTab] = useState<string>("active");
@@ -35,6 +42,13 @@ const Vehicles = () => {
     return isPast(date);
   };
   
+  // Get status badge color
+  const getDateStatusColor = (dateStr?: string) => {
+    if (isOverdue(dateStr)) return "bg-red-50 text-red-800";
+    if (isDueSoon(dateStr)) return "bg-amber-50 text-amber-800";
+    return "bg-gray-50";
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -58,101 +72,72 @@ const Vehicles = () => {
         </TabsList>
         
         <TabsContent value={activeTab} className="mt-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {displayedVehicles.map((vehicle) => (
-              <Card key={vehicle.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start">
-                    <CardTitle>{vehicle.licensePlate}</CardTitle>
-                    <Badge variant={vehicle.status === "active" ? "default" : "secondary"}>
-                      {vehicle.status === "active" ? (
-                        <>
-                          <Check className="h-3 w-3 mr-1" />
-                          Aktiv
-                        </>
-                      ) : (
-                        <>
-                          <AlertCircle className="h-3 w-3 mr-1" />
-                          Inaktiv
-                        </>
-                      )}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Fahrzeugdetails</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="text-sm bg-gray-50 rounded p-2">
-                          <span className="block text-gray-500">Typ</span>
-                          <span>{vehicle.type}</span>
+          {displayedVehicles.length > 0 ? (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[180px]">Kennzeichen</TableHead>
+                    <TableHead>Fahrzeugtyp</TableHead>
+                    <TableHead className="text-center">Sitze</TableHead>
+                    <TableHead className="text-center">Rollstuhlplätze</TableHead>
+                    <TableHead className="text-center">TÜV</TableHead>
+                    <TableHead className="text-center">Wartung</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-right">Aktionen</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {displayedVehicles.map((vehicle) => (
+                    <TableRow key={vehicle.id}>
+                      <TableCell className="font-medium">{vehicle.licensePlate}</TableCell>
+                      <TableCell>{vehicle.type}</TableCell>
+                      <TableCell className="text-center">{vehicle.seats}</TableCell>
+                      <TableCell className="text-center">{vehicle.wheelchairSpaces}</TableCell>
+                      <TableCell className={`text-center ${getDateStatusColor(vehicle.inspectionDate)}`}>
+                        {vehicle.inspectionDate 
+                          ? format(parseISO(vehicle.inspectionDate), 'dd.MM.yyyy') 
+                          : "Nicht geplant"}
+                      </TableCell>
+                      <TableCell className={`text-center ${getDateStatusColor(vehicle.maintenanceDate)}`}>
+                        {vehicle.maintenanceDate 
+                          ? format(parseISO(vehicle.maintenanceDate), 'dd.MM.yyyy') 
+                          : "Nicht geplant"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={vehicle.status === "active" ? "default" : "secondary"}>
+                          {vehicle.status === "active" ? (
+                            <>
+                              <Check className="h-3 w-3 mr-1" />
+                              Aktiv
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Inaktiv
+                            </>
+                          )}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm">
+                            Details
+                          </Button>
+                          <Button 
+                            variant={vehicle.status === "active" ? "destructive" : "default"} 
+                            size="sm"
+                          >
+                            {vehicle.status === "active" ? "Deaktivieren" : "Aktivieren"}
+                          </Button>
                         </div>
-                        <div className="text-sm bg-gray-50 rounded p-2">
-                          <span className="block text-gray-500">Sitze</span>
-                          <span>{vehicle.seats}</span>
-                        </div>
-                        <div className="text-sm bg-gray-50 rounded p-2">
-                          <span className="block text-gray-500">Rollstuhlplätze</span>
-                          <span>{vehicle.wheelchairSpaces}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-sm font-medium text-muted-foreground mb-2">Termine</h4>
-                      <div className="space-y-2">
-                        <div className={`text-sm rounded p-2 flex justify-between items-center ${
-                          isOverdue(vehicle.maintenanceDate) 
-                            ? "bg-red-50 text-red-800" 
-                            : isDueSoon(vehicle.maintenanceDate)
-                              ? "bg-amber-50 text-amber-800"
-                              : "bg-gray-50"
-                        }`}>
-                          <span>Wartung</span>
-                          <span className="font-medium">
-                            {vehicle.maintenanceDate 
-                              ? format(parseISO(vehicle.maintenanceDate), 'dd.MM.yyyy') 
-                              : "Nicht geplant"}
-                          </span>
-                        </div>
-                        
-                        <div className={`text-sm rounded p-2 flex justify-between items-center ${
-                          isOverdue(vehicle.inspectionDate) 
-                            ? "bg-red-50 text-red-800" 
-                            : isDueSoon(vehicle.inspectionDate)
-                              ? "bg-amber-50 text-amber-800"
-                              : "bg-gray-50"
-                        }`}>
-                          <span>TÜV</span>
-                          <span className="font-medium">
-                            {vehicle.inspectionDate 
-                              ? format(parseISO(vehicle.inspectionDate), 'dd.MM.yyyy') 
-                              : "Nicht geplant"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-                
-                <CardFooter className="pt-0 flex justify-between">
-                  <Button variant="outline" size="sm">
-                    Details
-                  </Button>
-                  <Button 
-                    variant={vehicle.status === "active" ? "destructive" : "default"} 
-                    size="sm"
-                  >
-                    {vehicle.status === "active" ? "Deaktivieren" : "Aktivieren"}
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-          
-          {displayedVehicles.length === 0 && (
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
             <div className="text-center py-12 bg-gray-50 rounded-lg border">
               <div className="bg-gray-100 p-4 rounded-full inline-block mx-auto mb-4">
                 <Truck className="h-8 w-8 text-gray-500" />
