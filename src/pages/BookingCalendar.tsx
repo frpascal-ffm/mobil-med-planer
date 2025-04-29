@@ -178,7 +178,10 @@ const BookingCalendar = () => {
         <div
           key={day}
           className={className}
-          onClick={() => !isPast && isAvailable && handleDateSelect(dayData || { date: dateString, available: true })}
+          onClick={() => !isPast && isAvailable && handleDateSelect({
+            date: dateString,
+            available: true
+          })}
         >
           <span>{day}</span>
           {isUnavailable && <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-gray-500"></span>}

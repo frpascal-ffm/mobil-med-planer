@@ -47,6 +47,6 @@ export interface TimeSlot {
 
 export interface AvailableDay {
   date: string;
-  urgent: boolean;
   available: boolean;
+  unavailable?: boolean;
 }
