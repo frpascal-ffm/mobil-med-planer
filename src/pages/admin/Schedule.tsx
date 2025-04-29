@@ -152,7 +152,7 @@ const Schedule = () => {
                 {timeBlocks.map((time) => (
                   <div 
                     key={time} 
-                    className="h-14 px-1 border-b flex items-center justify-center text-xs text-gray-500"
+                    className="h-12 px-1 border-b flex items-center justify-center text-xs text-gray-500"
                   >
                     {time}
                   </div>
@@ -192,7 +192,7 @@ const Schedule = () => {
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
                                 key={`${vehicle.id}-${time}`} 
-                                className={`h-14 border-b border-r p-1 ${snapshot.isDraggingOver ? 'bg-gray-50' : ''}`}
+                                className={`h-12 border-b border-r p-1 ${snapshot.isDraggingOver ? 'bg-gray-50' : ''}`}
                               >
                                 {getBookingsForTimeBlock(vehicle.id, time).map((booking, index) => (
                                   <Draggable key={booking.id} draggableId={booking.id} index={index}>
@@ -233,7 +233,7 @@ const Schedule = () => {
                               ref={provided.innerRef}
                               {...provided.droppableProps}
                               key={`unassigned-${time}`} 
-                              className={`h-14 border-b p-1 ${snapshot.isDraggingOver ? 'bg-gray-100' : 'bg-gray-50'}`}
+                              className={`h-12 border-b p-1 ${snapshot.isDraggingOver ? 'bg-gray-100' : 'bg-gray-50'}`}
                             >
                               {getBookingsForTimeBlock(null, time).map((booking, index) => (
                                 <Draggable key={booking.id} draggableId={booking.id} index={index}>
