@@ -31,7 +31,7 @@ export const generateAvailableDays = (year: number, month: number): AvailableDay
     
     days.push({
       date: date.toISOString().split('T')[0],
-      urgent: Math.random() < 0.1, // 10% chance of being urgent
+      unavailable: Math.random() < 0.2, // 20% chance of being unavailable
       available: Math.random() > 0.2, // 80% chance of being available
     });
   }
