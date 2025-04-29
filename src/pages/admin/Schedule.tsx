@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockBookings, mockVehicles } from "@/services/mockData";
 import { Booking, Vehicle } from "@/types";
 import { Calendar as CalendarIcon, ChevronDown } from "lucide-react";
@@ -15,6 +14,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const Schedule = () => {
   const today = new Date();
@@ -24,7 +24,8 @@ const Schedule = () => {
   const activeDate = selectedDate.toISOString().split('T')[0];
   
   // Get bookings for the active date
-  const dateBookings = mockBookings.filter(booking => booking.date === activeDate);
+  const [bookings, setBookings] = useState(mockBookings);
+  const dateBookings = bookings.filter(booking => booking.date === activeDate);
   
   // Get vehicles with associated bookings
   const vehiclesWithBookings = mockVehicles
@@ -59,6 +60,40 @@ const Schedule = () => {
     if (date) {
       setSelectedDate(date);
     }
+  };
+
+  // Handle drag and drop
+  const handleDragEnd = (result: any) => {
+    const { destination, source, draggableId } = result;
+
+    // If dropped outside a droppable area
+    if (!destination) return;
+
+    // If dropped in the same place
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+
+    // Find the booking that was dragged
+    const booking = bookings.find(booking => booking.id === draggableId);
+    if (!booking) return;
+
+    // Create a new array of bookings
+    const newBookings = bookings.map(b => {
+      if (b.id === draggableId) {
+        // Update the booking's vehicleId
+        return {
+          ...b,
+          vehicleId: destination.droppableId === "no-vehicle" ? null : destination.droppableId,
+        };
+      }
+      return b;
+    });
+
+    setBookings(newBookings);
   };
   
   return (
@@ -106,100 +141,139 @@ const Schedule = () => {
       </div>
       
       <Card className="overflow-hidden">
-        <div className="grid grid-cols-[auto_1fr]">
-          {/* Time blocks column */}
-          <div className="min-w-[50px] border-r bg-gray-50">
-            <div className="h-10 border-b flex items-center justify-center text-xs font-medium bg-gray-100 text-gray-700">
-              Zeit
-            </div>
-            <ScrollArea className="h-[calc(100vh-280px)]">
-              {timeBlocks.map((time) => (
-                <div 
-                  key={time} 
-                  className="h-16 px-1 border-b flex items-center justify-center text-xs text-gray-500"
-                >
-                  {time}
-                </div>
-              ))}
-            </ScrollArea>
-          </div>
-          
-          {/* Schedule grid */}
-          <div className="overflow-x-auto">
-            <div className="min-w-full grid" style={{ gridTemplateColumns: `repeat(${vehiclesWithBookings.length + 1}, minmax(180px, 1fr))` }}>
-              {/* Header row with vehicle names */}
-              <div className="grid" style={{ gridTemplateColumns: `repeat(${vehiclesWithBookings.length + 1}, minmax(180px, 1fr))` }}>
-                {vehiclesWithBookings.map((vehicle) => (
-                  <div key={vehicle.id} className="h-10 border-b border-r px-2 bg-gray-100 flex items-center justify-center">
-                    <div className="font-medium text-sm text-gray-700">
-                      {vehicle.licensePlate}
-                    </div>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <div className="grid grid-cols-[auto_1fr]">
+            {/* Time blocks column */}
+            <div className="min-w-[50px] border-r bg-gray-50">
+              <div className="h-10 border-b flex items-center justify-center text-xs font-medium bg-gray-100 text-gray-700">
+                Zeit
+              </div>
+              <div className="h-[calc(100vh-280px)]">
+                {timeBlocks.map((time) => (
+                  <div 
+                    key={time} 
+                    className="h-14 px-1 border-b flex items-center justify-center text-xs text-gray-500"
+                  >
+                    {time}
                   </div>
                 ))}
-                
-                <div className="h-10 border-b px-2 bg-gray-100 flex items-center justify-between">
-                  <div className="font-medium text-sm text-gray-700">
-                    Ohne Fahrzeug
-                  </div>
-                </div>
               </div>
-              
-              {/* Time blocks grid with scrolling */}
-              <ScrollArea className="h-[calc(100vh-280px)]">
-                <div>
-                  {timeBlocks.map((time) => (
-                    <div key={time} className="grid" style={{ gridTemplateColumns: `repeat(${vehiclesWithBookings.length + 1}, minmax(180px, 1fr))` }}>
-                      {vehiclesWithBookings.map((vehicle) => {
-                        const bookings = getBookingsForTimeBlock(vehicle.id, time);
-                        return (
-                          <div key={`${vehicle.id}-${time}`} className="h-16 border-b border-r p-1">
-                            {bookings.map((booking) => (
-                              <div 
-                                key={booking.id} 
-                                className="p-1 text-xs bg-medical-100 border-l-2 border-medical-500 rounded mb-1 shadow-sm"
-                              >
-                                <div className="flex justify-between items-start">
-                                  <span className="font-medium">{booking.time} Uhr</span>
-                                  {booking.transportType === "wheelchair" && (
-                                    <span className="bg-amber-100 text-amber-800 px-1 rounded flex items-center">
-                                      <span className="mr-1">♿</span>
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="font-medium truncate">{booking.customerName}</div>
-                                <div className="truncate text-gray-600">{booking.pickupAddress}</div>
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })}
-                      
-                      <div key={`unassigned-${time}`} className="h-16 border-b p-1 bg-gray-50">
-                        {getBookingsForTimeBlock(null, time).map((booking) => (
-                          <div 
-                            key={booking.id}
-                            className="p-1 text-xs bg-red-50 border-l-2 border-red-500 rounded mb-1 shadow-sm"
-                          >
-                            <div className="flex justify-between items-start">
-                              <span className="font-medium">{booking.time} Uhr</span>
-                              {booking.transportType === "wheelchair" && (
-                                <span className="bg-amber-100 text-amber-800 px-1 rounded flex items-center">
-                                  <span className="mr-1">♿</span>
-                                </span>
-                              )}
-                            </div>
-                            <div className="font-medium truncate">{booking.customerName}</div>
-                            <div className="truncate text-gray-600">{booking.pickupAddress}</div>
-                          </div>
-                        ))}
+            </div>
+            
+            {/* Schedule grid */}
+            <ScrollArea className="w-full" orientation="horizontal">
+              <div className="min-w-max grid" style={{ gridTemplateColumns: `repeat(${vehiclesWithBookings.length + 1}, minmax(180px, 1fr))` }}>
+                {/* Header row with vehicle names */}
+                <div className="grid" style={{ gridTemplateColumns: `repeat(${vehiclesWithBookings.length + 1}, minmax(180px, 1fr))` }}>
+                  {vehiclesWithBookings.map((vehicle) => (
+                    <div key={vehicle.id} className="h-10 border-b border-r px-2 bg-gray-100 flex items-center justify-center">
+                      <div className="font-medium text-sm text-gray-700">
+                        {vehicle.licensePlate}
                       </div>
                     </div>
                   ))}
+                  
+                  <div className="h-10 border-b px-2 bg-gray-100 flex items-center justify-between">
+                    <div className="font-medium text-sm text-gray-700">
+                      Ohne Fahrzeug
+                    </div>
+                  </div>
                 </div>
-              </ScrollArea>
-            </div>
+                
+                {/* Time blocks grid with scrolling */}
+                <ScrollArea className="h-[calc(100vh-280px)]">
+                  <div>
+                    {timeBlocks.map((time) => (
+                      <div key={time} className="grid" style={{ gridTemplateColumns: `repeat(${vehiclesWithBookings.length + 1}, minmax(180px, 1fr))` }}>
+                        {vehiclesWithBookings.map((vehicle) => (
+                          <Droppable key={`${vehicle.id}`} droppableId={vehicle.id}>
+                            {(provided, snapshot) => (
+                              <div 
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                key={`${vehicle.id}-${time}`} 
+                                className={`h-14 border-b border-r p-1 ${snapshot.isDraggingOver ? 'bg-gray-50' : ''}`}
+                              >
+                                {getBookingsForTimeBlock(vehicle.id, time).map((booking, index) => (
+                                  <Draggable key={booking.id} draggableId={booking.id} index={index}>
+                                    {(provided, snapshot) => (
+                                      <div 
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        style={{
+                                          ...provided.draggableProps.style,
+                                          opacity: snapshot.isDragging ? 0.8 : 1
+                                        }}
+                                        className="p-1 text-xs bg-medical-100 border-l-2 border-medical-500 rounded mb-1 shadow-sm cursor-grab active:cursor-grabbing"
+                                      >
+                                        <div className="flex justify-between items-start">
+                                          <span className="font-medium">{booking.time} Uhr</span>
+                                          {booking.transportType === "wheelchair" && (
+                                            <span className="bg-amber-100 text-amber-800 px-1 rounded flex items-center">
+                                              <span className="mr-1">♿</span>
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="font-medium truncate">{booking.customerName}</div>
+                                        <div className="truncate text-gray-600">{booking.pickupAddress}</div>
+                                      </div>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
+                              </div>
+                            )}
+                          </Droppable>
+                        ))}
+                        
+                        <Droppable droppableId="no-vehicle" key="no-vehicle">
+                          {(provided, snapshot) => (
+                            <div 
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              key={`unassigned-${time}`} 
+                              className={`h-14 border-b p-1 ${snapshot.isDraggingOver ? 'bg-gray-100' : 'bg-gray-50'}`}
+                            >
+                              {getBookingsForTimeBlock(null, time).map((booking, index) => (
+                                <Draggable key={booking.id} draggableId={booking.id} index={index}>
+                                  {(provided, snapshot) => (
+                                    <div 
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      {...provided.dragHandleProps}
+                                      style={{
+                                        ...provided.draggableProps.style,
+                                        opacity: snapshot.isDragging ? 0.8 : 1
+                                      }}
+                                      className="p-1 text-xs bg-red-50 border-l-2 border-red-500 rounded mb-1 shadow-sm cursor-grab active:cursor-grabbing"
+                                    >
+                                      <div className="flex justify-between items-start">
+                                        <span className="font-medium">{booking.time} Uhr</span>
+                                        {booking.transportType === "wheelchair" && (
+                                          <span className="bg-amber-100 text-amber-800 px-1 rounded flex items-center">
+                                            <span className="mr-1">♿</span>
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="font-medium truncate">{booking.customerName}</div>
+                                      <div className="truncate text-gray-600">{booking.pickupAddress}</div>
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            </ScrollArea>
           </div>
-        </div>
+        </DragDropContext>
       </Card>
       
       <div className="flex items-center bg-gray-50 rounded-lg p-2 text-xs">
