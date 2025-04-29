@@ -64,6 +64,7 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				medical: {
+					50: '#f0f7ff',  // Lightest shade for backgrounds
 					100: '#e6f7ff',
 					200: '#bae7ff',
 					300: '#91d5ff',

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { format, addMonths, subMonths } from "date-fns";
 import { de } from "date-fns/locale";
@@ -27,6 +26,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { generateAvailableDays, generateTimeSlots } from "@/services/mockData";
 import { AvailableDay, TimeSlot } from "@/types";
+import { WheelchairIcon } from "@/components/Icons";
 
 const BookingCalendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -261,7 +261,7 @@ const BookingCalendar = () => {
           
           <div className="bg-medical-50 rounded-lg p-6 border border-medical-100">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Wheelchair className="h-5 w-5 text-medical-600" />
+              <WheelchairIcon className="h-5 w-5 text-medical-600" />
               <span>Hinweise zur Buchung</span>
             </h2>
             

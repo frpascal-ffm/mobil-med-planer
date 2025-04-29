@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockBookings, mockVehicles } from "@/services/mockData";
 import { Booking, Vehicle } from "@/types";
-import { Calendar, Wheelchair } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 
@@ -108,7 +108,7 @@ const Schedule = () => {
                           <span className="text-sm font-medium">{booking.time} Uhr</span>
                           {booking.transportType === "wheelchair" && (
                             <span className="bg-amber-100 text-amber-800 p-1 rounded text-xs flex items-center">
-                              <Wheelchair className="h-3 w-3 mr-1" />
+                              <span className="mr-1">♿</span>
                               Rollstuhl
                             </span>
                           )}
@@ -165,7 +165,7 @@ const Schedule = () => {
                                 <span className="text-sm font-medium">{booking.time} Uhr</span>
                                 {booking.transportType === "wheelchair" && (
                                   <span className="bg-amber-100 text-amber-800 p-1 rounded text-xs flex items-center">
-                                    <Wheelchair className="h-3 w-3 mr-1" />
+                                    <span className="mr-1">♿</span>
                                     Rollstuhl
                                   </span>
                                 )}

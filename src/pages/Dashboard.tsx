@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { Calendar, Clock, Truck, Wheelchair, AlertCircle, Check } from "lucide-r
 import { Booking } from "@/types";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import { WheelchairIcon } from "@/components/Icons";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("today");
@@ -143,7 +143,7 @@ const Dashboard = () => {
                               : "bg-green-100 text-green-600"
                         }`}>
                           {booking.transportType === "wheelchair" ? (
-                            <Wheelchair className="h-5 w-5" />
+                            <WheelchairIcon className="h-5 w-5" />
                           ) : booking.transportType === "carryingChair" ? (
                             <AlertCircle className="h-5 w-5" />
                           ) : (
