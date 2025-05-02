@@ -1,1 +1,14 @@
+
 project_id = "gczkuolrxmwfwhcgllva"
+
+[functions.google-auth]
+verify_jwt = false
+
+[functions.google-calendars]
+verify_jwt = false
+
+[functions.sync-calendar-event]
+verify_jwt = false
+
+[functions.select-calendar]
+verify_jwt = false

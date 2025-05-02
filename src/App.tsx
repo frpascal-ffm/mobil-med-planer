@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth";
 
 // Pages
 import Homepage from "./pages/Homepage";
@@ -25,22 +26,24 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Homepage />} />
-          <Route path="/booking" element={<BookingCalendar />} />
-          <Route path="/login" element={<Login />} />
-          
-          {/* Admin routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="schedule" element={<Schedule />} />
-            <Route path="vehicles" element={<Vehicles />} />
-            <Route path="staff" element={<Staff />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Homepage />} />
+            <Route path="/booking" element={<BookingCalendar />} />
+            <Route path="/login" element={<Login />} />
+            
+            {/* Admin routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="schedule" element={<Schedule />} />
+              <Route path="vehicles" element={<Vehicles />} />
+              <Route path="staff" element={<Staff />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

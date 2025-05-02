@@ -7,35 +7,52 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { Ambulance, LockKeyhole } from "lucide-react";
+import { Ambulance, LockKeyhole, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { signIn } = useAuth();
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // In a real app, this would authenticate with a backend service
-    // For demo purposes, we'll use hardcoded credentials
     try {
-      // Simulate network request
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await signIn(email, password);
+      toast.success("Erfolgreich angemeldet");
+    } catch (error: any) {
+      console.error("Login error:", error);
       
-      if (email === "admin@medtransport.com" && password === "password") {
-        toast.success("Erfolgreich angemeldet");
-        navigate("/admin");
-      } else if (email === "dispatcher@medtransport.com" && password === "password") {
-        toast.success("Erfolgreich angemeldet");
-        navigate("/admin");
-      } else {
+      if (error.message === "Invalid login credentials") {
         toast.error("Ungültige Anmeldedaten");
+      } else {
+        toast.error("Ein Fehler ist aufgetreten");
       }
-    } catch (error) {
-      toast.error("Ein Fehler ist aufgetreten");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/admin`,
+          scopes: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
+        },
+      });
+      
+      if (error) throw error;
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      toast.error("Fehler bei der Anmeldung mit Google");
     } finally {
       setIsLoading(false);
     }
@@ -92,10 +109,48 @@ const Login = () => {
               
               <div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Wird angemeldet..." : "Anmelden"}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Wird angemeldet...
+                    </>
+                  ) : (
+                    "Anmelden"
+                  )}
                 </Button>
               </div>
             </form>
+            
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">
+                    Oder anmelden mit
+                  </span>
+                </div>
+              </div>
+              
+              <div className="mt-6">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={handleGoogleLogin}
+                  disabled={isLoading}
+                >
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                    <path
+                      fill="currentColor"
+                      d="M12.545 10.239v3.821h5.445c-0.712 2.315-2.647 3.972-5.445 3.972-3.332 0-6.033-2.701-6.033-6.032s2.701-6.032 6.033-6.032c1.498 0 2.866 0.549 3.921 1.453l2.814-2.814c-1.787-1.676-4.188-2.701-6.735-2.701-5.518 0-9.99 4.473-9.99 9.99s4.473 9.99 9.99 9.99c8.485 0 10.527-7.899 9.75-11.648h-9.75z"
+                    />
+                  </svg>
+                  Mit Google anmelden
+                </Button>
+              </div>
+            </div>
           </div>
           
           <div className="mt-4 text-center bg-blue-50 p-4 rounded-lg border border-blue-100">

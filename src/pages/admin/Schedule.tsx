@@ -1,10 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { mockBookings, mockVehicles } from "@/services/mockData";
 import { Booking, Vehicle } from "@/types";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, RefreshCw } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { de } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,16 +15,22 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Schedule = () => {
   const today = new Date();
   const tomorrow = addDays(today, 1);
+  const { user } = useAuth();
   
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const activeDate = selectedDate.toISOString().split('T')[0];
   
   // Get bookings for the active date
   const [bookings, setBookings] = useState(mockBookings);
+  const [syncingBooking, setSyncingBooking] = useState<string | null>(null);
+  const [hasGoogleCalendarSelected, setHasGoogleCalendarSelected] = useState(false);
   const dateBookings = bookings.filter(booking => booking.date === activeDate);
   
   // Get vehicles with associated bookings
@@ -37,6 +43,28 @@ const Schedule = () => {
         bookings: vehicleBookings,
       };
     });
+  
+  // Check if user has Google Calendar connected and selected
+  useEffect(() => {
+    const checkGoogleCalendarSetup = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: calendar, error } = await supabase
+          .from('user_google_calendars')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_selected', true)
+          .maybeSingle();
+        
+        setHasGoogleCalendarSelected(!!calendar);
+      } catch (error) {
+        console.error('Error checking Google Calendar setup:', error);
+      }
+    };
+    
+    checkGoogleCalendarSetup();
+  }, [user]);
   
   // Timeblocks for the schedule
   const timeBlocks = [];
@@ -63,7 +91,7 @@ const Schedule = () => {
   };
 
   // Handle drag and drop
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = async (result: any) => {
     const { destination, source, draggableId } = result;
 
     // If dropped outside a droppable area
@@ -94,6 +122,67 @@ const Schedule = () => {
     });
 
     setBookings(newBookings);
+
+    // Sync with Google Calendar if connected
+    if (user && hasGoogleCalendarSelected) {
+      const updatedBooking = newBookings.find(b => b.id === draggableId);
+      if (updatedBooking) {
+        await syncBookingWithGoogleCalendar(updatedBooking.id, "update");
+      }
+    }
+  };
+
+  // Sync a booking with Google Calendar
+  const syncBookingWithGoogleCalendar = async (bookingId: string, action: 'create' | 'update' | 'delete') => {
+    if (!user) return;
+    
+    try {
+      setSyncingBooking(bookingId);
+      
+      const response = await fetch('https://gczkuolrxmwfwhcgllva.supabase.co/functions/v1/sync-calendar-event', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          bookingId,
+          action,
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to sync with Google Calendar');
+      }
+      
+      const result = await response.json();
+      
+      if (action === 'create') {
+        toast.success('Fahrt zum Google Kalender hinzugefügt');
+      } else if (action === 'update') {
+        toast.success('Fahrt im Google Kalender aktualisiert');
+      } else if (action === 'delete') {
+        toast.success('Fahrt aus dem Google Kalender entfernt');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error(`Error ${action}ing booking in Google Calendar:`, error);
+      toast.error(`Fehler beim ${action === 'create' ? 'Erstellen' : action === 'update' ? 'Aktualisieren' : 'Löschen'} im Google Kalender`);
+    } finally {
+      setSyncingBooking(null);
+    }
+  };
+
+  // Sync all unassigned bookings with Google Calendar
+  const syncAllBookingsWithGoogleCalendar = async () => {
+    if (!user || !hasGoogleCalendarSelected) return;
+    
+    toast.info('Synchronisiere Fahrten mit Google Kalender...');
+    
+    for (const booking of dateBookings) {
+      await syncBookingWithGoogleCalendar(booking.id, booking.google_event_id ? 'update' : 'create');
+    }
+    
+    toast.success('Alle Fahrten wurden mit Google Kalender synchronisiert');
   };
   
   return (
@@ -138,6 +227,18 @@ const Schedule = () => {
             />
           </PopoverContent>
         </Popover>
+
+        {hasGoogleCalendarSelected && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={syncAllBookingsWithGoogleCalendar}
+            disabled={syncingBooking !== null}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${syncingBooking ? 'animate-spin' : ''}`} />
+            Mit Google Kalender synchronisieren
+          </Button>
+        )}
       </div>
       
       <Card className="overflow-hidden">
@@ -216,6 +317,9 @@ const Schedule = () => {
                                             <span className="mr-1">♿</span>
                                           </span>
                                         )}
+                                        {syncingBooking === booking.id && (
+                                          <RefreshCw className="h-3 w-3 animate-spin ml-1 text-gray-500" />
+                                        )}
                                       </div>
                                       <div className="font-medium truncate">{booking.customerName}</div>
                                       <div className="truncate text-gray-600">{booking.pickupAddress}</div>
@@ -256,6 +360,9 @@ const Schedule = () => {
                                         <span className="bg-amber-100 text-amber-800 px-1 rounded flex items-center">
                                           <span className="mr-1">♿</span>
                                         </span>
+                                      )}
+                                      {syncingBooking === booking.id && (
+                                        <RefreshCw className="h-3 w-3 animate-spin ml-1 text-gray-500" />
                                       )}
                                     </div>
                                     <div className="font-medium truncate">{booking.customerName}</div>
