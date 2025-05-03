@@ -7,7 +7,6 @@ import { Booking, Vehicle } from "@/types";
 import { Calendar as CalendarIcon, RefreshCw } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { de } from "date-fns/locale";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,

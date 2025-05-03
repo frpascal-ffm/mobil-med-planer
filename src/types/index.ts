@@ -19,6 +19,7 @@ export interface Booking {
   roundTrip: boolean;
   vehicleId?: string;
   status: "pending" | "assigned" | "completed" | "cancelled";
+  google_event_id?: string;
 }
 
 export interface Vehicle {
